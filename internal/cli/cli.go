@@ -214,6 +214,27 @@ func HandlerFollowing(s *State, cmd Command, user database.User) error {
 	return nil
 }
 
+func HandlerUnfollow(s *State, cmd Command, user database.User) error {
+	url := cmd.Args[0]
+
+	feed, err := s.DB.GetFeedUrl(context.Background(), url)
+	if err != nil {
+		return errors.New("feed does not seem to exist")
+	}
+
+	params := database.UnfollowFeedParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	}
+
+	if err := s.DB.UnfollowFeed(context.Background(), params); err != nil {
+		return err
+	}
+
+	fmt.Printf("Unfollowed feed: %s",feed.Name)
+	return nil
+}
+
 func MiddlewareLoggedIn(handler func(s *State, cmd Command, user database.User) error) func(*State, Command) error {
 	return func(s *State, cmd Command) error {
 		user, err := s.DB.GetUser(context.Background(), s.Config.Username)
