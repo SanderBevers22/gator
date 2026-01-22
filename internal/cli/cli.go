@@ -112,18 +112,13 @@ func HandlerAgg(s *State, cmd Command) error {
 	return nil
 }
 
-func HandlerAddFeed(s *State, cmd Command) error {
+func HandlerAddFeed(s *State, cmd Command, user database.User) error {
 	if len(cmd.Args) < 2 {
 		return errors.New("usage: addfeed <name> <url>")
 	}
 
 	name := cmd.Args[0]
 	url := cmd.Args[1]
-
-	user, err := s.DB.GetUser(context.Background(), s.Config.Username)
-	if err != nil {
-		return errors.New("current user does not exist")
-	}
 
 	feed, err := s.DB.CreateFeed(
 		context.Background(), database.CreateFeedParams{
@@ -142,6 +137,23 @@ func HandlerAddFeed(s *State, cmd Command) error {
 
 	fmt.Printf("Feed created:\n")
 	fmt.Printf("ID: %v\nName: %s\nURL: %s\nUserID: %v\n", feed.ID, feed.Name, feed.Url, feed.UserID)
+
+	params := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
+
+	follow, err := s.DB.CreateFeedFollow(context.Background(), params)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Feedname: %s\nUsername: %s\n", follow.Feedname, follow.Username)
+
 	return nil
 }
 
@@ -156,6 +168,60 @@ func HandlerFeeds(s *State, cmd Command) error {
 		fmt.Printf("Name: %s\nURL: %s\nCreated by: %s\n", feed.Feedname, feed.Feedurl, feed.Username)
 	}
 	return nil
+}
+
+func HandlerFeedFollow(s *State, cmd Command, user database.User) error {
+	if len(cmd.Args) == 0 {
+		return errors.New("usage: follow <url>")
+	}
+
+	url := cmd.Args[0]
+
+	feed, err := s.DB.GetFeedUrl(context.Background(), url)
+	if err != nil {
+		return errors.New("feed does not seem to exist")
+	}
+
+	params := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
+
+	follow, err := s.DB.CreateFeedFollow(context.Background(), params)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Feedname: %s\nUsername: %s\n", follow.Feedname, follow.Username)
+
+	return nil
+}
+
+func HandlerFollowing(s *State, cmd Command, user database.User) error {
+	feeds, err := s.DB.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, feed := range feeds {
+		fmt.Printf("%s\n", feed.Feedname)
+	}
+
+	return nil
+}
+
+func MiddlewareLoggedIn(handler func(s *State, cmd Command, user database.User) error) func(*State, Command) error {
+	return func(s *State, cmd Command) error {
+		user, err := s.DB.GetUser(context.Background(), s.Config.Username)
+		if err != nil {
+			return errors.New("current user does not exist")
+		}
+		return handler(s, cmd, user)
+	}
 }
 
 func (c *Commands) Run(s *State, cmd Command) error {
