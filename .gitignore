@@ -1,0 +1,8 @@
+*.exe
+*.out
+*.test
+gator
+
+coverage.out
+sbom*.json
+vuln*.json
