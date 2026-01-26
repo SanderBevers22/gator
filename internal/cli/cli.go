@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"strconv"
 
 	"github.com/google/uuid"
 
 	"gator/internal/config"
 	"gator/internal/database"
-	"gator/internal/rss"
 )
 
 type State struct {
@@ -103,12 +103,24 @@ func HandlerUsers(s *State, cmd Command) error {
 }
 
 func HandlerAgg(s *State, cmd Command) error {
-	feed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if len(cmd.Args) < 1 {
+		return errors.New("usage: agg <time_between_requests>")
+	}
+
+	duration, err := time.ParseDuration(cmd.Args[0])
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("%+v\n", feed)
+	fmt.Printf("Collecting feeds every %s\n", duration)
+
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
+
 	return nil
 }
 
@@ -231,7 +243,38 @@ func HandlerUnfollow(s *State, cmd Command, user database.User) error {
 		return err
 	}
 
-	fmt.Printf("Unfollowed feed: %s",feed.Name)
+	fmt.Printf("Unfollowed feed: %s", feed.Name)
+	return nil
+}
+
+func HandlerBrowse(s *State, cmd Command) error {
+	limit := 2
+	if len(cmd.Args) > 0 {
+		l, err := strconv.Atoi(cmd.Args[0])
+		if err == nil {
+			limit = l
+		}
+	}
+
+	curUser, err := s.DB.GetUser(context.Background(), s.Config.Username)
+	if err != nil {
+		return err
+	}
+
+	params := database.GetPostsForUserParams{
+		ID: curUser.ID,
+		Limit: int32(limit),
+	}
+
+	posts, err := s.DB.GetPostsForUser(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	for _,p := range posts {
+		fmt.Printf("[%s] %s\n%s\n\n", p.PublishedAt.Format("2006-01-02 15:04"),p.Title,p.Url)
+	}
+
 	return nil
 }
 
