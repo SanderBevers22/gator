@@ -12,6 +12,7 @@ import (
 	"gator/internal/database"
 	"gator/internal/rss"
 )
+
 type RSSFeed struct {
 	Channel struct {
 		Title       string    `xml:"title"`
@@ -27,6 +28,7 @@ type RSSItem struct {
 	Description string `xml:"description"`
 	PubDate     string `xml:"pubDate"`
 }
+
 func scrapeFeeds(s *State) {
 	ctx := context.Background()
 
@@ -60,7 +62,7 @@ func scrapeFeeds(s *State) {
 				UpdatedAt:   time.Now(),
 				Title:       html.UnescapeString(item.Title),
 				Url:         item.Link,
-				Description: sql.NullString{String: html.UnescapeString(item.Description), Valid: item.Description != "",},
+				Description: sql.NullString{String: html.UnescapeString(item.Description), Valid: item.Description != ""},
 				PublishedAt: publishedAt,
 				FeedID:      feed.ID,
 			},

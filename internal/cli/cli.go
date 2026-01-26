@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -262,7 +262,7 @@ func HandlerBrowse(s *State, cmd Command) error {
 	}
 
 	params := database.GetPostsForUserParams{
-		ID: curUser.ID,
+		ID:    curUser.ID,
 		Limit: int32(limit),
 	}
 
@@ -271,8 +271,8 @@ func HandlerBrowse(s *State, cmd Command) error {
 		return err
 	}
 
-	for _,p := range posts {
-		fmt.Printf("[%s] %s\n%s\n\n", p.PublishedAt.Format("2006-01-02 15:04"),p.Title,p.Url)
+	for _, p := range posts {
+		fmt.Printf("[%s] %s\n%s\n\n", p.PublishedAt.Format("2006-01-02 15:04"), p.Title, p.Url)
 	}
 
 	return nil
