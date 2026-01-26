@@ -133,6 +133,7 @@ pipeline {
             sh '''
             docker compose -f ${SONAR_COMPOSE} down || true
             '''
+        }
     }
 }
 
