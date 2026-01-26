@@ -129,13 +129,10 @@ pipeline {
                 ${SECURITY_DIR}/*.json
                 coverage.out
             ''', fingerprint: true
-        }
 
-        always {
             sh '''
             docker compose -f ${SONAR_COMPOSE} down || true
             '''
-        }
     }
 }
 
